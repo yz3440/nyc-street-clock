@@ -1,0 +1,4 @@
+id,panorama_id,text,ocr_yaw,ocr_pitch,ocr_width,ocr_height,lat,lng,heading,pitch,roll
+70164572,dmeMWm6YZ8snSfB-6VpRSw,0546,-63.92,-6.35,1.57,0.59,40.73,-73.9,169.91,80.68,6.99
+85097686,UMQhqZr5JZpq3F79xbiQMg,0546,-66.46,-7.51,2.09,0.75,40.71,-73.85,98.34,90.09,1.48
+16113210,dbzsKfJRui44OeBo5RMNNg,0546,140.05,0.76,0.75,0.55,40.71,-74.0,35.54,90.15,359.94

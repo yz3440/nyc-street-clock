@@ -1,0 +1,5 @@
+id,panorama_id,text,ocr_yaw,ocr_pitch,ocr_width,ocr_height,lat,lng,heading,pitch,roll
+58720761,UWUn0GXL5_mHNgCFi6nQUw,0589,96.45,8.39,3.31,1.01,40.74,-73.85,202.45,92.27,0.05
+79661990,y14tK_TxBEk9sKSvMXTa0g,0589,83.75,1.0,1.64,0.62,40.75,-73.9,299.27,88.02,1.05
+80492246,HfMzzsThyiDj9F1maz9DpQ,0589,49.3,4.41,1.44,0.82,40.77,-73.91,131.44,88.28,0.08
+95576201,b0tisugtVbaiugba3D-f0g,0589,63.01,-1.48,0.75,0.48,40.55,-74.17,78.83,88.63,358.57

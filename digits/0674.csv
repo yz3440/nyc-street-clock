@@ -1,0 +1,4 @@
+id,panorama_id,text,ocr_yaw,ocr_pitch,ocr_width,ocr_height,lat,lng,heading,pitch,roll
+66729495,1vn-MeY7DlKh7JlPzeSVZA,0674,31.67,0.17,0.67,0.34,40.73,-73.91,186.47,89.36,0.23
+75075830,o21QlXHYoC94DAA-jMt1sQ,0674,-73.41,-0.28,2.36,1.13,40.7,-73.9,307.29,89.42,1.64
+92164822,mptKynY6S_fIS-f6AFrFOw,0674,-67.18,-11.17,0.65,0.53,40.75,-73.84,152.23,89.0,2.63
