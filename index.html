@@ -204,6 +204,10 @@
       }
 
       async function fetchGsvProps(hours, minutes) {
+        // trim left 0s
+        hours = parseInt(hours.replace(/^0+/, ''));
+        minutes = parseInt(minutes.replace(/^0+/, ''));
+
         if (minutes < 10) minutes = `0${minutes}`;
         const res = await fetch(`/digits/${hours}${minutes}.csv`);
         const data = await res.text();
