@@ -19,11 +19,19 @@
         height: 100vh;
         width: 100vw;
       }
+      #time span {
+        margin: auto auto;
+      }
       #time {
         --bg-color: #816627;
         --text-color: rgb(231, 220, 18);
         --glow-color: #dedb82d0;
 
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
         position: fixed;
         top: 0%;
         left: 0%;
@@ -83,7 +91,11 @@
     </style>
   </head>
   <body>
-    <div id="time"></div>
+    <div id="time">
+      <span id="time-hours"></span>
+      <span id="time-colon">:</span>
+      <span id="time-minutes"></span>
+    </div>
     <div id="streetview">
       <div id="streetview-overlay"></div>
       <iframe id="streetview-iframe" src="" frameborder="0"></iframe>
@@ -175,25 +187,40 @@
       let currentGsvProps = [];
 
       async function updateTime() {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        document.getElementById(
-          'time'
-        ).innerHTML = `${hours}<span id="time-colon">:</span>${minutes}`;
+        const now = new Date().toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+        });
+        const date = new Date(now);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        document.getElementById('time-hours').innerHTML = hours;
+        document.getElementById('time-minutes').innerHTML = minutes;
 
         currentGsvProps = await fetchGsvProps(hours, minutes);
 
         const randomGsvProps = pickRandomGsvProps(currentGsvProps);
-        console.log(randomGsvProps);
         const embedUrl = getEmbedUrl(randomGsvProps);
-        console.log(embedUrl);
         currentUrl = embedUrl;
         document.getElementById('streetview-iframe').src = embedUrl;
       }
 
-      updateTime();
-      setInterval(updateTime, 60000);
+      async function updateAndSchedule() {
+        await updateTime();
+        const now = new Date();
+        const nextHour = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          now.getHours() + 1,
+          0,
+          0,
+          0
+        );
+        const timeUntilNextHour = nextHour - now;
+        setTimeout(updateAndSchedule, timeUntilNextHour);
+      }
+
+      updateAndSchedule();
     </script>
   </body>
 </html>
