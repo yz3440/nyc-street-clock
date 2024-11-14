@@ -265,6 +265,7 @@
     <script>
       let currentUrl = '';
       let currentGsvProps = [];
+      let nextInterval = 0;
 
       async function updateTime() {
         const now = new Date().toLocaleString('en-US', {
@@ -281,6 +282,7 @@
       }
 
       async function updateAndSchedule() {
+        clearTimeout(nextInterval);
         await updateTime();
         const now = new Date();
         const nextHour = new Date(
@@ -293,10 +295,16 @@
           0
         );
         const timeUntilNextHour = nextHour - now;
-        setTimeout(updateAndSchedule, timeUntilNextHour);
+        nextInterval = setTimeout(updateAndSchedule, timeUntilNextHour);
       }
 
       updateAndSchedule();
+
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        window.addEventListener('blur', () => {
+          window.addEventListener('focus', updateAndSchedule, { once: true });
+        });
+      }
 
       document
         .getElementById('shuffle-button')
