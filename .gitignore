@@ -1,4 +1,8 @@
 ocr_data.csv
+process.db
+deprecated/
+.python-version
+
 
 .DS_Store
 
