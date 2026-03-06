@@ -171,130 +171,132 @@
 
     <script src="utils.js"></script>
     <script>
-      const GOOGLE_MAPS_API_KEY = 'AIzaSyC85j9aImruv_OSCjLtLxpTChstKYlxtLw'; // don't worry, this only has access to the free map embed api
-      function parseOcrLine(lineStr) {
-        let [
-          id,
-          panoramaId,
-          text,
-          ocrYaw,
-          ocrPitch,
-          ocrWidth,
-          ocrHeight,
-          lat,
-          lng,
-          heading,
-          pitch,
-          roll,
-        ] = lineStr.split(',');
-        return {
-          id: parseInt(id),
-          panoramaId,
-          text,
-          ocrYaw: parseFloat(ocrYaw),
-          ocrPitch: parseFloat(ocrPitch),
-          heading: parseFloat(heading),
-          pitch: parseFloat(pitch),
-          roll: parseFloat(roll),
-          lat: parseFloat(lat),
-          lng: parseFloat(lng),
-          ocrWidth: parseFloat(ocrWidth),
-          ocrHeight: parseFloat(ocrHeight),
-        };
+      const GOOGLE_MAPS_API_KEY = 'AIzaSyC85j9aImruv_OSCjLtLxpTChstKYlxtLw';
+
+      // All approved data, indexed by time text
+      let allData = [];        // raw JSON array from approved.json
+      let dataByTime = {};     // { "432": [...rows], "100": [...rows] }
+      let cachedWindow = {};   // subset of dataByTime for nearby minutes
+      let currentTimeKey = ''; // e.g. "432"
+      let seenIds = {};        // { "432": Set([id1, id2, ...]) } — tracks shown images per time
+
+      async function loadApprovedData() {
+        const res = await fetch('approved.json');
+        allData = await res.json();
+
+        // Build lookup by time text
+        dataByTime = {};
+        for (const row of allData) {
+          const key = String(row.text);
+          if (!dataByTime[key]) dataByTime[key] = [];
+          dataByTime[key].push(row);
+        }
+        console.log(`Loaded ${allData.length} approved rows across ${Object.keys(dataByTime).length} times`);
       }
 
-      async function fetchGsvProps(hours, minutes) {
-        hours = parseInt(hours);
-        minutes = parseInt(minutes);
-
-        if (minutes < 10) minutes = `0${minutes}`;
-        const res = await fetch(`/digits/${hours}${minutes}.csv`);
-        const data = await res.text();
-        const lines = data.split('\n').slice(1); // skip the header
-
-        if (hours < 10) hours = `0${hours}`;
-        const paddedRes = await fetch(`/digits/${hours}${minutes}.csv`);
-        const paddedData = await paddedRes.text();
-        const paddedLines = paddedData.split('\n').slice(1); // skip the header
-
-        const allLines = [...lines, ...paddedLines];
-        return allLines.map((line) => {
-          const ocrProps = parseOcrLine(line);
-
-          return getGoogleStreetviewProps(
-            ocrProps.panoramaId,
-            ocrProps.lat,
-            ocrProps.lng,
-            ocrProps.ocrYaw,
-            ocrProps.ocrPitch,
-            ocrProps.heading,
-            ocrProps.pitch,
-            ocrProps.roll,
-            ocrProps.ocrWidth,
-            ocrProps.ocrHeight
-          );
-        });
+      function to12Hour(h) {
+        // Convert 24h hour to 12h (0->12, 13->1, etc.)
+        h = h % 12;
+        return h === 0 ? 12 : h;
       }
 
-      function pickRandomGsvProps(gsvProps, rangeFromMiddle = 10) {
-        const sortedLines = gsvProps.sort(
-          (a, b) => b.ocrWidth * b.ocrHeight - a.ocrWidth * a.ocrHeight
-        );
-
-        // pick the one in the middle of the list
-        const middleRange = {
-          min: Math.max(
-            0,
-            Math.floor(sortedLines.length / 2) - rangeFromMiddle
-          ),
-          max: Math.min(
-            sortedLines.length - 1,
-            Math.floor(sortedLines.length / 2) + rangeFromMiddle
-          ),
-        };
-
-        const randomIdx =
-          Math.floor(Math.random() * (middleRange.max - middleRange.min)) +
-          middleRange.min;
-        return sortedLines[randomIdx];
-      }
-
-      function getEmbedUrl(gsvProps) {
-        return getGoogleStreetviewEmbedUrl(gsvProps, GOOGLE_MAPS_API_KEY);
-      }
-      function shuffle(rangeFromMiddle = 10) {
-        const randomGsvProps = pickRandomGsvProps(
-          currentGsvProps,
-          rangeFromMiddle
-        );
-        const embedUrl = getEmbedUrl(randomGsvProps);
-        currentUrl = embedUrl;
-        document.getElementById('streetview-iframe').src = embedUrl;
-      }
-    </script>
-
-    <script>
-      let currentUrl = '';
-      let currentGsvProps = [];
-      let nextInterval = 0;
-
-      async function updateTime() {
+      function getNYCTime() {
         const now = new Date().toLocaleString('en-US', {
           timeZone: 'America/New_York',
         });
         const date = new Date(now);
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        document.getElementById('time-hours').innerHTML = hours;
-        document.getElementById('time-minutes').innerHTML = minutes;
-
-        currentGsvProps = await fetchGsvProps(hours, minutes);
-        shuffle();
+        const h24 = date.getHours();
+        return { hours: to12Hour(h24), minutes: date.getMinutes(), ampm: h24 >= 12 ? 'PM' : 'AM' };
       }
+
+      function timeToKey(hours, minutes) {
+        // Match the DB format: 12h, e.g. hour=4, minute=32 -> "432"
+        // hour=10, minute=5 -> "1005"
+        return String(hours * 100 + minutes);
+      }
+
+      function cacheNearbyMinutes(hours, minutes) {
+        // Cache current time + next 10 minutes for quick access
+        cachedWindow = {};
+        for (let offset = 0; offset < 10; offset++) {
+          let m = minutes + offset;
+          let h = hours;
+          if (m >= 60) {
+            m -= 60;
+            h += 1;
+            if (h > 12) h = 1;
+          }
+          const key = timeToKey(h, m);
+          if (dataByTime[key]) {
+            cachedWindow[key] = dataByTime[key];
+          }
+        }
+      }
+
+      function rowToGsvProps(row) {
+        return getGoogleStreetviewProps(
+          row.panorama_id,
+          row.lat,
+          row.lng,
+          row.ocr_yaw,
+          row.ocr_pitch,
+          row.heading,
+          row.pitch,
+          row.roll,
+          row.ocr_width,
+          row.ocr_height
+        );
+      }
+
+      function showRandomRow(timeKey) {
+        const rows = cachedWindow[timeKey] || dataByTime[timeKey];
+        if (!rows || rows.length === 0) {
+          console.log(`No approved rows for time ${timeKey}`);
+          return;
+        }
+
+        if (!seenIds[timeKey]) seenIds[timeKey] = new Set();
+
+        // Filter to unseen rows
+        let unseen = rows.filter(r => !seenIds[timeKey].has(r.id));
+
+        // If all have been shown, reset and allow repeats
+        if (unseen.length === 0) {
+          seenIds[timeKey].clear();
+          unseen = rows;
+        }
+
+        const row = unseen[Math.floor(Math.random() * unseen.length)];
+        seenIds[timeKey].add(row.id);
+
+        const gsvProps = rowToGsvProps(row);
+        const embedUrl = getGoogleStreetviewEmbedUrl(gsvProps, GOOGLE_MAPS_API_KEY);
+        document.getElementById('streetview-iframe').src = embedUrl;
+      }
+
+      function updateDisplay(hours, minutes, ampm) {
+        document.getElementById('time-hours').innerHTML = String(hours);
+        document.getElementById('time-minutes').innerHTML = String(minutes).padStart(2, '0');
+        document.getElementById('time-timezone').innerHTML = ampm;
+
+        const timeKey = timeToKey(hours, minutes);
+        currentTimeKey = timeKey;
+        cacheNearbyMinutes(hours, minutes);
+        showRandomRow(timeKey);
+      }
+
+      function shuffle() {
+        showRandomRow(currentTimeKey);
+      }
+
+      let nextInterval = 0;
 
       async function updateAndSchedule() {
         clearTimeout(nextInterval);
-        await updateTime();
+        const { hours, minutes, ampm } = getNYCTime();
+        updateDisplay(hours, minutes, ampm);
+
+        // Schedule next update at the start of the next minute
         const now = new Date();
         const nextMinute = new Date(
           now.getFullYear(),
@@ -309,7 +311,10 @@
         nextInterval = setTimeout(updateAndSchedule, timeUntilNextMinute);
       }
 
-      updateAndSchedule();
+      // Init
+      loadApprovedData().then(() => {
+        updateAndSchedule();
+      });
 
       if (/Mobi|Android/i.test(navigator.userAgent)) {
         window.addEventListener('blur', () => {
@@ -319,7 +324,7 @@
 
       document
         .getElementById('shuffle-button')
-        .addEventListener('click', () => shuffle(1000));
+        .addEventListener('click', () => shuffle());
     </script>
   </body>
 </html>

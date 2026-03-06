@@ -3,7 +3,7 @@ import os
 import sqlite3
 import json
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtCore import Qt, QUrl, QTimer
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtGui import QKeyEvent
 from urllib.parse import urlparse
@@ -11,7 +11,7 @@ import argparse
 import psycopg2
 from random import randrange, uniform
 from dotenv import load_dotenv
-# import speech_recognition as sr
+import speech_recognition as sr
 from threading import Thread
 import time as time_module
 from queue import Queue
@@ -88,19 +88,16 @@ class TimeBasedViewer(QMainWindow):
         self.current_row_index = 0
 
         # Initialize speech recognition
-        # self.recognizer = sr.Recognizer()
-        # self.microphone = sr.Microphone()
+        self.recognizer = sr.Recognizer()
+        self.microphone = sr.Microphone()
+        self.speech_timer = QTimer()
+        self.speech_timer.timeout.connect(self.listen_for_command)
         
-        # Add command queue for thread communication
-        self.command_queue = Queue()
+        # Remove thread-related attributes
+        self.running = True
         
-        # Start voice command thread
-        # self.voice_thread = Thread(target=self.listen_for_commands, daemon=True)
-        # self.voice_thread.start()
+        # Remove timer initialization
         
-        # Start command processing timer
-        self.startTimer(100)  # Check queue every 100ms
-
         self.current_rows = []
         self.visited_rows = []
         self.visited_rows_index = None 
@@ -146,28 +143,22 @@ class TimeBasedViewer(QMainWindow):
         # Set focus policy to receive keyboard events
         self.setFocusPolicy(Qt.StrongFocus)
 
-    def timerEvent(self, event):
-        """Process any pending voice commands"""
-        try:
-            command = self.command_queue.get_nowait()
-            if command == "yes":
-                self.update_approval(True)
-            elif command == "no":
-                self.update_approval(False)
-            elif command == "back":
-                self.last_row()
-        except queue.Empty:
-            pass
+        # Start speech recognition timer after UI loads
+        QTimer.singleShot(1000, self.start_speech_timer)
 
-    def listen_for_commands(self):
-        print("\n=== Voice Recognition Started ===")
-        print("Microphone initialized with device index:", self.microphone.device_index)
-        
-        # Increase sensitivity by lowering energy threshold
-        self.recognizer.energy_threshold = 100  # Default is usually around 300-3000
-        self.recognizer.dynamic_energy_threshold = False  # Disable dynamic adjustment
-        
-        while True:
+    def start_speech_timer(self):
+        """Start the speech recognition timer"""
+        self.speech_timer.start(100)  # Check every 100ms
+
+    def closeEvent(self, event):
+        """Clean up resources before closing"""
+        self.speech_timer.stop()
+        self.running = False
+        event.accept()
+
+    def listen_for_command(self):
+        """Listen for a single voice command"""
+        try:
             with self.microphone as source:
                 try:
                     # Update UI to show listening state
@@ -175,49 +166,34 @@ class TimeBasedViewer(QMainWindow):
                     self.speech_label.setStyleSheet("QLabel { background-color: #e6ffe6; border-radius: 5px; padding: 5px; }")
                     
                     print("👂 Listening for command...")
-                    audio = self.recognizer.listen(source, timeout=3, phrase_time_limit=3)
+                    audio = self.recognizer.listen(source, timeout=1, phrase_time_limit=1)
                     
                     # Update UI to show processing state
                     self.speech_label.setText("🔄 Processing...")
                     self.speech_label.setStyleSheet("QLabel { background-color: #fff7e6; border-radius: 5px; padding: 5px; }")
                     
-                    print("✅ Audio captured! Converting to text...")
                     text = self.recognizer.recognize_google(audio).lower()
-                    print("🗣️ Recognized text:", text)
                     
-                    # Update UI to show recognized text briefly
+                    # Update UI to show recognized text
                     self.speech_label.setText(f"✓ Heard: {text}")
                     self.speech_label.setStyleSheet("QLabel { background-color: #e6ffe6; border-radius: 5px; padding: 5px; }")
 
                     if "yes" in text:
-                        print("⚡ Queueing 'yes' command")
-                        self.command_queue.put("yes")
+                        self.update_approval(True)
                     elif "no" in text:
-                        print("⚡ Queueing 'no' command")
-                        self.command_queue.put("no")
+                        self.update_approval(False)
                     elif "back" in text:
-                        print("⚡ Queueing 'back' command")
-                        self.command_queue.put("back")
-                    else:
-                        print("❌ No matching command found in:", text)
+                        self.last_row()
                     
                 except (sr.WaitTimeoutError, sr.UnknownValueError):
-                    # Reset UI state after timeout or unrecognized speech
                     self.speech_label.setText("🎤 Waiting...")
                     self.speech_label.setStyleSheet("QLabel { background-color: #f0f0f0; border-radius: 5px; padding: 5px; }")
-                    continue
                 except sr.RequestError as e:
                     self.speech_label.setText("🌐 Network Error")
-                    self.speech_label.setStyleSheet("QLabel { background-color: #ffe6e6; border-radius: 5px; padding: 5px; }")
                     print(f"🌐 Network Error: {e}")
-                    continue
-                except Exception as e:
-                    self.speech_label.setText("💥 Error")
-                    self.speech_label.setStyleSheet("QLabel { background-color: #ffe6e6; border-radius: 5px; padding: 5px; }")
-                    print(f"💥 Unexpected error: {e}")
-                    continue
                 
-            time_module.sleep(0.1)
+        except Exception as e:
+            print(f"💥 Error in speech recognition: {e}")
 
     def in_history(self):
         if self.visited_rows_index is None:
@@ -275,11 +251,11 @@ class TimeBasedViewer(QMainWindow):
             self.status_label.setText(f"No data found for time {time_string}")
 
     def load_current_row(self):
-        
+        """Load the current row data and update the view"""
         if len(self.visited_rows) == 0:
             self.visited_rows.append(self.current_row_index)
             self.visited_rows_index = 0 
-        """Load the current row data and update the view"""
+
         if 0 <= self.current_row_index < len(self.current_rows):
             row = self.current_rows[self.current_row_index]
 

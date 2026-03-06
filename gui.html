@@ -100,6 +100,15 @@
           rgba(0, 0, 0, 0.8) 70%
         );
       }
+      #address-blocker {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 20%;
+        height: 20%;
+        background-color: #000;
+        z-index: 101;
+      }
       #shuffle-button {
         position: absolute;
         top: 0;
@@ -136,7 +145,8 @@
     </style>
     <script src="utils.js"></script>
     <script>
-        const GOOGLE_MAPS_API_KEY = 'AIzaSyDEl3qAc4jP0XLnGFknNVmwKjvbIKhq9wI'; // don't worry, this only has access to the free map embed api (idk why urs doesnt work yufeng so I added mine, also limmted to the free embed API)
+        // const GOOGLE_MAPS_API_KEY = 'AIzaSyDEl3qAc4jP0XLnGFknNVmwKjvbIKhq9wI'; // don't worry, this only has access to the free map embed api (idk why urs doesnt work yufeng so I added mine, also limmted to the free embed API)
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyBZxsZ_EogGQp75X1CKeV_DAUyw7xWA64A'; // don't worry, this only has access to the free map embed api (idk why urs doesnt work yufeng so I added mine, also limmted to the free embed API)
         // let ocrProps
         let embedUrl
         function onPythonVariableSet() {
@@ -193,7 +203,7 @@
   </head>
   <body>
     <!-- <div id="output" style="font-size: 40px; color: #FFFFFF;"></div> -->
-    <div id="time">
+    <div id="time" style="display: none;">
       <span id="time-hours"></span>
       <span id="time-colon">:</span>
       <span id="time-minutes"></span>
@@ -222,6 +232,7 @@
       </svg>
     </div>
     <div id="streetview">
+      <div id="address-blocker"></div>
       <div id="streetview-overlay"></div>
       <iframe id="streetview-iframe" src="" frameborder="0"></iframe>
     </div>
