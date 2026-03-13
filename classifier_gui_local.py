@@ -27,7 +27,7 @@ conn = sqlite3.connect(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 cursor = conn.cursor()
 
 # get all already-checked panoramas from local db (where approved is not null)
-cursor.execute("SELECT id FROM panoramas WHERE approved IS NOT NULL")
+cursor.execute("SELECT id FROM panoramas WHERE approved IS 1")
 all_checked_panoramas = cursor.fetchall()
 all_checked_ids = set(tup[0] for tup in all_checked_panoramas)
 
@@ -393,15 +393,16 @@ class TimeBasedViewer(QMainWindow):
             return
 
         self.update_global_status()
+        print(f"Loading row {row_index} for time {self.get_time_string()}")
         pane.load_row(row_index)
 
     def next_time(self):
         self.current_minute += 1
-        if self.current_minute > 60:
-            self.current_minute = 1
+        if self.current_minute > 59:
+            self.current_minute = 0
             self.current_hour += 1
-            if self.current_hour > 12:
-                self.current_hour = 1
+            if self.current_hour > 23:
+                self.current_hour = 0
 
         # Reset strict prompt state for new time
         self.strict_prompt_disabled = False

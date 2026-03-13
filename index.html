@@ -173,6 +173,9 @@
     <script>
       const GOOGLE_MAPS_API_KEY = 'AIzaSyC85j9aImruv_OSCjLtLxpTChstKYlxtLw';
 
+      // 12 vs 24 hour toggle (default: 12-hour)
+      let use24Hour = false;
+
       // All approved data, indexed by time text
       let allData = [];        // raw JSON array from approved.json
       let dataByTime = {};     // { "432": [...rows], "100": [...rows] }
@@ -194,6 +197,16 @@
         console.log(`Loaded ${allData.length} approved rows across ${Object.keys(dataByTime).length} times`);
       }
 
+      function detectUserTimeFormat() {
+        // Use undefined locale so the browser respects the OS time format setting
+        const resolved = new Intl.DateTimeFormat(undefined, {
+          hour: 'numeric',
+        }).resolvedOptions();
+        if (resolved.hourCycle === 'h23' || resolved.hourCycle === 'h24') {
+          use24Hour = true;
+        }
+      }
+
       function to12Hour(h) {
         // Convert 24h hour to 12h (0->12, 13->1, etc.)
         h = h % 12;
@@ -206,29 +219,49 @@
         });
         const date = new Date(now);
         const h24 = date.getHours();
+        if (use24Hour) {
+          return { hours: h24, minutes: date.getMinutes(), ampm: null };
+        }
         return { hours: to12Hour(h24), minutes: date.getMinutes(), ampm: h24 >= 12 ? 'PM' : 'AM' };
       }
 
       function timeToKey(hours, minutes) {
-        // Match the DB format: 12h, e.g. hour=4, minute=32 -> "432"
-        // hour=10, minute=5 -> "1005"
+        // e.g. hour=4, minute=32 -> "432"; hour=16, minute=5 -> "1605"
         return String(hours * 100 + minutes);
+      }
+
+      function timeToKey12(h24, minutes) {
+        // Always produce a 12-hour key as fallback
+        const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+        return String(h12 * 100 + minutes);
       }
 
       function cacheNearbyMinutes(hours, minutes) {
         // Cache current time + next 10 minutes for quick access
         cachedWindow = {};
+        const maxHour = use24Hour ? 24 : 12;
         for (let offset = 0; offset < 10; offset++) {
           let m = minutes + offset;
           let h = hours;
           if (m >= 60) {
             m -= 60;
             h += 1;
-            if (h > 12) h = 1;
+            if (use24Hour) {
+              if (h >= 24) h = 0;
+            } else {
+              if (h > 12) h = 1;
+            }
           }
           const key = timeToKey(h, m);
           if (dataByTime[key]) {
             cachedWindow[key] = dataByTime[key];
+          }
+          // In 24-hour mode, also cache the 12-hour fallback key
+          if (use24Hour) {
+            const fallbackKey = timeToKey12(h, m);
+            if (fallbackKey !== key && dataByTime[fallbackKey]) {
+              cachedWindow[fallbackKey] = dataByTime[fallbackKey];
+            }
           }
         }
       }
@@ -248,8 +281,12 @@
         );
       }
 
-      function showRandomRow(timeKey) {
-        const rows = cachedWindow[timeKey] || dataByTime[timeKey];
+      function showRandomRow(timeKey, fallbackKey) {
+        let rows = cachedWindow[timeKey] || dataByTime[timeKey];
+        // In 24-hour mode, fall back to the 12-hour key if no 24h data exists
+        if ((!rows || rows.length === 0) && fallbackKey) {
+          rows = cachedWindow[fallbackKey] || dataByTime[fallbackKey];
+        }
         if (!rows || rows.length === 0) {
           console.log(`No approved rows for time ${timeKey}`);
           return;
@@ -275,18 +312,24 @@
       }
 
       function updateDisplay(hours, minutes, ampm) {
-        document.getElementById('time-hours').innerHTML = String(hours);
+        document.getElementById('time-hours').innerHTML = use24Hour
+          ? String(hours).padStart(2, '0')
+          : String(hours);
         document.getElementById('time-minutes').innerHTML = String(minutes).padStart(2, '0');
-        document.getElementById('time-timezone').innerHTML = ampm;
+        document.getElementById('time-timezone').innerHTML = use24Hour ? 'ET' : ampm;
 
         const timeKey = timeToKey(hours, minutes);
+        const fallbackKey = use24Hour ? timeToKey12(hours, minutes) : null;
         currentTimeKey = timeKey;
+        currentFallbackKey = fallbackKey;
         cacheNearbyMinutes(hours, minutes);
-        showRandomRow(timeKey);
+        showRandomRow(timeKey, fallbackKey);
       }
 
+      let currentFallbackKey = null;
+
       function shuffle() {
-        showRandomRow(currentTimeKey);
+        showRandomRow(currentTimeKey, currentFallbackKey);
       }
 
       let nextInterval = 0;
@@ -312,6 +355,7 @@
       }
 
       // Init
+      detectUserTimeFormat();
       loadApprovedData().then(() => {
         updateAndSchedule();
       });
