@@ -165,14 +165,14 @@
     // --- Side face slivers (other clock faces peeking out) ---
     // Left sliver
     ctx.beginPath();
-    ctx.ellipse(cx - orbR + 1, cy, 7, faceR * 0.7, 0, -Math.PI / 2, Math.PI / 2);
-    ctx.fillStyle = 'rgba(255,254,248,0.45)';
+    ctx.ellipse(cx - orbR + 1, cy, 6, faceR * 0.8, 0, -Math.PI / 2, Math.PI / 2);
+    ctx.fillStyle = 'rgba(255,255,250,0.55)';
     ctx.fill();
 
     // Right sliver
     ctx.beginPath();
-    ctx.ellipse(cx + orbR - 1, cy, 7, faceR * 0.7, 0, Math.PI / 2, -Math.PI / 2);
-    ctx.fillStyle = 'rgba(255,254,248,0.35)';
+    ctx.ellipse(cx + orbR - 1, cy, 6, faceR * 0.8, 0, Math.PI / 2, -Math.PI / 2);
+    ctx.fillStyle = 'rgba(255,255,250,0.45)';
     ctx.fill();
 
     // --- Hour ticks ---
