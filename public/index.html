@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>NYC Street Clock</title>
     <meta name="description" content="read the time from nyc streetview" />
     <style>
@@ -40,6 +40,7 @@
         background: url('cloud.webp') center top / cover no-repeat #000;
         color: #fff;
         overflow: hidden;
+        touch-action: manipulation;
         height: 100dvh;
         width: 100dvw;
         display: flex;
