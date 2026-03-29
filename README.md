@@ -22,6 +22,12 @@ cp public/env.example.js public/env.js  # frontend Google Maps API key
 
 Requires: PostgreSQL (for step 1), Google Maps API key, OpenAI API key.
 
+## Serve
+
+```sh
+uv run python -m http.server 8000 -d ./public
+```
+
 ## Deploy
 
 The `public/` folder is a self-contained static site. Serve it with any static host.
