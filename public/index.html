@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>NYC Street Clock</title>
     <meta name="description" content="read the time from nyc streetview" />
     <style>
@@ -80,13 +83,122 @@
       }
 
       /* --- Pigeon on windowsill --- */
-      #pigeon {
+      #pigeon-container {
         position: fixed;
         left: 5%;
         bottom: 70vh;
-        width: 180px;
-        pointer-events: none;
         z-index: 0;
+      }
+
+      #pigeon {
+        width: 180px;
+        pointer-events: auto;
+        cursor: pointer;
+        display: block;
+        transition: filter 0.5s ease-out;
+      }
+
+      #pigeon:hover {
+        animation: pigeon-hue 0.8s linear infinite;
+        animation-delay: 0.3s;
+        filter: brightness(1.5) saturate(2);
+      }
+
+      @keyframes pigeon-hue {
+        0% { filter: hue-rotate(0deg) brightness(2) saturate(3); }
+        100% { filter: hue-rotate(360deg) brightness(2) saturate(3); }
+      }
+
+      /* --- About speech bubble --- */
+      #about-bubble {
+        position: absolute;
+        top: -50px;
+        right: -140px;
+        background: #fffde8;
+        color: #222;
+        font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+        font-size: 0.75em;
+        padding: 8px 14px 8px 14px;
+        border-radius: 14px;
+        border: 2px solid #333;
+        white-space: nowrap;
+        pointer-events: auto;
+        z-index: 10;
+        box-shadow: 2px 3px 0 #333;
+        transition: opacity 0.3s, transform 0.3s;
+        animation: bubble-pop-in 0.3s ease-out;
+      }
+
+      @keyframes bubble-pop-in {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      #about-bubble.hidden {
+        opacity: 0;
+        transform: scale(0.8);
+        pointer-events: none;
+        animation: none;
+      }
+
+      #about-bubble .close-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 18px;
+        height: 18px;
+        background: #333;
+        color: #fffde8;
+        border: 2px solid #333;
+        border-radius: 50%;
+        font-size: 12px;
+        cursor: pointer;
+        pointer-events: auto;
+        font-family: sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-bottom: 2px;
+      }
+
+      #about-bubble .close-btn:hover {
+        background: #555;
+      }
+
+      #about-bubble a {
+        color: #222;
+        text-decoration: underline;
+        text-decoration-style: wavy;
+        text-underline-offset: 2px;
+      }
+
+      #about-bubble a:hover {
+        color: #555;
+      }
+
+      #about-bubble::after {
+        content: '';
+        position: absolute;
+        bottom: -12px;
+        left: 30px;
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 12px solid #333;
+      }
+
+      #about-bubble::before {
+        content: '';
+        position: absolute;
+        bottom: -9px;
+        left: 32px;
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 10px solid #fffde8;
+        z-index: 1;
       }
 
       /* --- ESB behind window --- */
@@ -174,7 +286,7 @@
       }
 
       .indicator {
-        font-size: 0.55em;
+        font-size: 0.95em;
         font-weight: 600;
         color: var(--text-color);
         text-shadow: 0 0 4px var(--glow-color);
@@ -222,7 +334,7 @@
 
       #brand-label {
         font-family: 'Dancing Script', cursive;
-        font-size: 1.1em;
+        font-size: 1.35em;
         letter-spacing: -0.01em;
         color: rgba(200, 170, 140, 0.55);
         text-shadow:
@@ -632,13 +744,22 @@
           top: 35dvh;
         }
 
-        #pigeon {
+        #pigeon-container {
           position: fixed;
           left: 0%;
           bottom: 65dvh;
-          width: 180px;
-          pointer-events: none;
           z-index: 0;
+        }
+
+        #pigeon {
+          width: 180px;
+          pointer-events: auto;
+          cursor: pointer;
+        }
+
+        #about-bubble {
+          font-size: 0.6em;
+          padding: 6px 10px;
         }
         #esb {
           position: fixed;
@@ -653,7 +774,10 @@
   </head>
   <body>
     <img id="esb" src="esb.webp" alt="Empire State Building" />
-    <img id="pigeon" src="pigeon.webp" alt="Pigeon" />
+    <div id="pigeon-container">
+      <div id="about-bubble"><span class="close-btn" onclick="event.stopPropagation(); document.getElementById('about-bubble').classList.add('hidden')">&times;</span>made by <a href="https://yufengzhao.com" target="_blank" rel="noopener">Yufeng Zhao</a> and <a href="https://wttdotm.com/" target="_blank" rel="noopener">WTTDOTM</a></div>
+      <img id="pigeon" src="pigeon.webp" alt="Pigeon" onclick="var b=document.getElementById('about-bubble'); b.classList.add('hidden'); void b.offsetWidth; b.classList.remove('hidden');" />
+    </div>
     <div id="window-frame-bottom">
       <img src="windowframebottom.webp" alt="" />
     </div>
@@ -736,12 +860,34 @@
     <script src="utils.js"></script>
     <script>
       // Prevent pinch-to-zoom on iOS Safari (ignores viewport meta since iOS 10)
-      document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('gesturechange', function (e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('gestureend', function (e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('touchmove', function (e) {
-        if (e.touches.length > 1) e.preventDefault();
-      }, { passive: false });
+      document.addEventListener(
+        'gesturestart',
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+      document.addEventListener(
+        'gesturechange',
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+      document.addEventListener(
+        'gestureend',
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+      document.addEventListener(
+        'touchmove',
+        function (e) {
+          if (e.touches.length > 1) e.preventDefault();
+        },
+        { passive: false },
+      );
 
       const urlParams = new URLSearchParams(window.location.search);
       const noTeleport = urlParams.has('noTeleport');
@@ -1140,5 +1286,11 @@
         });
     </script>
     <script src="make_clock_favicon.js"></script>
+    <script>
+      setTimeout(function () {
+        var b = document.getElementById('about-bubble');
+        if (b) b.classList.add('hidden');
+      }, 30000);
+    </script>
   </body>
 </html>
