@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>NYC Street Clock</title>
     <meta name="description" content="read the time from nyc streetview" />
     <style>
@@ -40,19 +43,20 @@
         background: url('cloud.webp') center top / cover no-repeat #000;
         color: #fff;
         overflow: hidden;
+        touch-action: manipulation;
         height: 100dvh;
         width: 100dvw;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding-top: 60vh;
+        padding-top: 60dvh;
       }
 
       /* --- Wooden Table Surface --- */
       #table-surface {
         position: fixed;
         top: 30dvh;
-        bottom: -100dvh;
+        bottom: -100lvh;
         left: -20%;
         width: 140%;
         background: url('wood.webp') center / cover no-repeat;
@@ -79,13 +83,122 @@
       }
 
       /* --- Pigeon on windowsill --- */
-      #pigeon {
+      #pigeon-container {
         position: fixed;
         left: 5%;
         bottom: 70vh;
-        width: 180px;
-        pointer-events: none;
         z-index: 0;
+      }
+
+      #pigeon {
+        width: 180px;
+        pointer-events: auto;
+        cursor: pointer;
+        display: block;
+        transition: filter 0.5s ease-out;
+      }
+
+      #pigeon:hover {
+        animation: pigeon-hue 0.8s linear infinite;
+        animation-delay: 0.3s;
+        filter: brightness(1.5) saturate(2);
+      }
+
+      @keyframes pigeon-hue {
+        0% { filter: hue-rotate(0deg) brightness(2) saturate(3); }
+        100% { filter: hue-rotate(360deg) brightness(2) saturate(3); }
+      }
+
+      /* --- About speech bubble --- */
+      #about-bubble {
+        position: absolute;
+        top: -50px;
+        right: -140px;
+        background: #fffde8;
+        color: #222;
+        font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+        font-size: 0.75em;
+        padding: 8px 14px 8px 14px;
+        border-radius: 14px;
+        border: 2px solid #333;
+        white-space: nowrap;
+        pointer-events: auto;
+        z-index: 10;
+        box-shadow: 2px 3px 0 #333;
+        transition: opacity 0.3s, transform 0.3s;
+        animation: bubble-pop-in 0.3s ease-out;
+      }
+
+      @keyframes bubble-pop-in {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      #about-bubble.hidden {
+        opacity: 0;
+        transform: scale(0.8);
+        pointer-events: none;
+        animation: none;
+      }
+
+      #about-bubble .close-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 18px;
+        height: 18px;
+        background: #333;
+        color: #fffde8;
+        border: 2px solid #333;
+        border-radius: 50%;
+        font-size: 12px;
+        cursor: pointer;
+        pointer-events: auto;
+        font-family: sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-bottom: 2px;
+      }
+
+      #about-bubble .close-btn:hover {
+        background: #555;
+      }
+
+      #about-bubble a {
+        color: #222;
+        text-decoration: underline;
+        text-decoration-style: wavy;
+        text-underline-offset: 2px;
+      }
+
+      #about-bubble a:hover {
+        color: #555;
+      }
+
+      #about-bubble::after {
+        content: '';
+        position: absolute;
+        bottom: -12px;
+        left: 30px;
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 12px solid #333;
+      }
+
+      #about-bubble::before {
+        content: '';
+        position: absolute;
+        bottom: -9px;
+        left: 32px;
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 10px solid #fffde8;
+        z-index: 1;
       }
 
       /* --- ESB behind window --- */
@@ -93,7 +206,7 @@
         position: fixed;
         right: 5%;
         bottom: 65vh;
-        width: 250px;
+        width: 400px;
         pointer-events: none;
         z-index: -1;
       }
@@ -173,7 +286,7 @@
       }
 
       .indicator {
-        font-size: 0.55em;
+        font-size: 0.95em;
         font-weight: 600;
         color: var(--text-color);
         text-shadow: 0 0 4px var(--glow-color);
@@ -221,7 +334,7 @@
 
       #brand-label {
         font-family: 'Dancing Script', cursive;
-        font-size: 1.1em;
+        font-size: 1.35em;
         letter-spacing: -0.01em;
         color: rgba(200, 170, 140, 0.55);
         text-shadow:
@@ -273,7 +386,7 @@
 
       #top-buttons {
         display: flex;
-        gap: 14px;
+        gap: 24px;
         align-items: center;
       }
 
@@ -310,7 +423,7 @@
       }
 
       .top-btn-label {
-        font-size: 0.5em;
+        font-size: 0.8em;
         font-weight: 600;
         color: rgba(200, 170, 140, 0.7);
         letter-spacing: 0.08em;
@@ -538,28 +651,17 @@
       /* --- Responsive --- */
       @media (max-width: 900px) {
         :root {
-          --clock-width: 95vw;
-          --clock-front-height: 100px;
-          --clock-top-depth: 650px;
-        }
-
-        #clock-scene {
-          perspective: 750px;
-        }
-
-        #clock-body {
-          transform: rotateX(-58deg);
-        }
-      }
-
-      @media (max-width: 600px) {
-        :root {
           --clock-width: 98vw;
-          --clock-front-height: 80px;
-          --clock-top-depth: 650px;
+          --clock-front-height: 9dvh;
+          --clock-top-depth: 81dvh;
+        }
+
+        body {
+          padding-top: 80dvh;
         }
 
         #clock-scene {
+          height: auto;
           perspective: 600px;
         }
 
@@ -579,11 +681,11 @@
         }
 
         .top-btn-label {
-          font-size: 0.38em;
+          font-size: 0.75em;
         }
 
         #top-buttons {
-          gap: 6px;
+          gap: 26px;
         }
 
         #fallback-bubble {
@@ -630,20 +732,51 @@
 
         #metrocard {
           right: 5%;
-          bottom: 4%;
+          bottom: 0%;
           width: 160px;
         }
 
         #window-frame-bottom {
-          transform: scaleY(1.3) translateY(1%);
-          transform-origin: bottom center;
+          bottom: 65dvh;
+        }
+
+        #table-surface {
+          top: 35dvh;
+        }
+
+        #pigeon-container {
+          position: fixed;
+          left: 0%;
+          bottom: 65dvh;
+          z-index: 0;
+        }
+
+        #pigeon {
+          width: 180px;
+          pointer-events: auto;
+          cursor: pointer;
+        }
+
+        #about-bubble {
+          font-size: 0.6em;
+          padding: 6px 10px;
+        }
+        #esb {
+          position: fixed;
+          right: -5%;
+          bottom: 60dvh;
+          width: 250px;
+          pointer-events: none;
+          z-index: -1;
         }
       }
     </style>
   </head>
   <body>
     <img id="esb" src="esb.webp" alt="Empire State Building" />
-    <img id="pigeon" src="pigeon.webp" alt="Pigeon" />
+    <div id="pigeon-container">
+      <img id="pigeon" src="pigeon.webp" alt="Pigeon" />
+    </div>
     <div id="window-frame-bottom">
       <img src="windowframebottom.webp" alt="" />
     </div>
@@ -717,6 +850,37 @@
     <script src="env.js"></script>
     <script src="utils.js"></script>
     <script>
+      // Prevent pinch-to-zoom on iOS Safari (ignores viewport meta since iOS 10)
+      document.addEventListener(
+        'gesturestart',
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+      document.addEventListener(
+        'gesturechange',
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+      document.addEventListener(
+        'gestureend',
+        function (e) {
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+      document.addEventListener(
+        'touchmove',
+        function (e) {
+          if (e.touches.length > 1) e.preventDefault();
+        },
+        { passive: false },
+      );
+
+
       let use24h = false;
       let kbAnimation = null;
 
@@ -750,13 +914,20 @@
         const delayPromise = new Promise((resolve) =>
           setTimeout(resolve, delay),
         );
-        Promise.all([loadPromise, delayPromise]).then(() => {
+        const timeoutPromise = new Promise((resolve) =>
+          setTimeout(resolve, 5000),
+        );
+        Promise.race([
+          Promise.all([loadPromise, delayPromise]),
+          timeoutPromise,
+        ]).then(() => {
           staticEl.classList.remove('active');
           restartKenBurns();
         });
       }
 
       let currentGsvProps = null;
+      let currentTeleportUrl = '#';
 
       let dataByTime = {};
       let cachedWindow = {};
@@ -938,6 +1109,7 @@
         );
         transitionStreetview(embedUrl);
         currentGsvProps = gsvProps;
+        currentTeleportUrl = getGoogleStreetviewUrl(gsvProps);
 
         if (debugClockText !== null) {
           console.log(`[DEBUG] pano_id: ${rows[idx].panorama_id}`);
@@ -1033,6 +1205,7 @@
         );
         transitionStreetview(embedUrl);
         currentGsvProps = gsvProps;
+        currentTeleportUrl = getGoogleStreetviewUrl(gsvProps);
         console.log('[DEBUG] pano_id:', panoId, 'text:', row.text);
         console.log('[DEBUG] raw:', {
           ocr_yaw: row.ocr_yaw,
@@ -1091,5 +1264,6 @@
       });
 
     </script>
+    <script src="make_clock_favicon.js"></script>
   </body>
 </html>
