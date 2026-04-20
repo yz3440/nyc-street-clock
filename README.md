@@ -1,6 +1,10 @@
 # NYC Street Clock
 
-NYC Street Clock is an online clock made out of over 20,000 Google Street View captures from around New York City that reflect the given time. In watching the minutes tick by and clicking around the different matches within a given moment, viewers see not only the passage of time but also the breadth of ways that numbers exist in the city: The M116 bus in the early afternoon; an advertisement for $6.50 halal food in the evening; or the awning of the jewelry store at 1204 Broadway past midnight.
+NYC Street Clock is an online clock made out of over 20,000 Google Street View captures from around New York City that reflect the given time.
+
+![Demo Animation of NYC Street Clock](demo.gif)
+
+In watching the minutes tick by and clicking around the different matches within a given moment, viewers see not only the passage of time but also the breadth of ways that numbers exist in the city: The M116 bus in the early afternoon; an advertisement for $6.50 halal food in the evening; or the awning of the jewelry store at 1204 Broadway past midnight.
 
 ## Pipeline
 
