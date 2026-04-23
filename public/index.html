@@ -8,6 +8,8 @@
     />
     <title>NYC Street Clock</title>
     <meta name="description" content="read the time from nyc streetview" />
+
+
     <style>
       @font-face {
         font-family: 'LED Dot-Matrix';
@@ -205,7 +207,7 @@
       #esb {
         position: fixed;
         right: 5%;
-        bottom: 65vh;
+        bottom: 50dvh;
         width: 400px;
         pointer-events: none;
         z-index: -1;
@@ -771,6 +773,10 @@
         }
       }
     </style>
+
+    <script>
+          fetch(`https://wemakeinter.net/diyPixel/morryProjPixel.php?event=pageView&project=nycClock}`)
+    </script>
   </head>
   <body>
     <img id="esb" src="esb.webp" alt="Empire State Building" />
